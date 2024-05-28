@@ -12,16 +12,16 @@
     <div id="container">
         <h1>DILBOT</h1>
         <img id="dilbertImage" src="/static/dilbert.jpg" alt="Dilbert">
-        <button id="recordButton" class="stop">Talk</button>
+        <button id="recordButton" class="stop">TALK</button>
         <div id="loading"></div>
         <div id="errorMessage"></div>
         <div class="audio-container">
             <audio id="audioResponse" controls></audio>
-            <button id="toggleTranscriptButton">See Transcript</button>
+            <button id="toggleTranscriptButton">Show Transcript</button>
         </div>
         <div id="conversation" class="hidden">
             <div id="transcript" class="hidden">
-                <p><strong>Your Message:</strong> <span id="userMessage"></span></p>
+                <p><strong>User Message:</strong> <span id="userMessage"></span></p>
                 <p><strong>Dilbot Response:</strong> <span id="botMessage"></span></p>
             </div>
         </div>
@@ -43,42 +43,49 @@
             const dilbertImage = document.getElementById('dilbertImage');
             const audioResponse = document.getElementById('audioResponse');
 
-            recordButton.addEventListener('click', async () => {
-                if (!isRecording) {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            async function startRecording() {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
 
-                    mediaRecorder.onstop = async () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        audioChunks = [];
-                        sendAudioToServer(audioBlob);
-                    };
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioChunks = [];
+                    sendAudioToServer(audioBlob);
+                };
 
-                    mediaRecorder.start();
-                    isRecording = true;
-                    recordButton.textContent = 'Stop';
-                    recordButton.classList.remove('stop');
-                    recordButton.classList.add('record');
+                mediaRecorder.start();
+                isRecording = true;
+                recordButton.textContent = 'STOP';
+                recordButton.classList.remove('stop');
+                recordButton.classList.add('record');
+            }
+
+            function stopRecording() {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordButton.textContent = 'TALK';
+                recordButton.classList.remove('record');
+                recordButton.classList.add('stop');
+            }
+
+            function toggleRecording() {
+                if (isRecording) {
+                    stopRecording();
                 } else {
-                    mediaRecorder.stop();
-                    isRecording = false;
-                    recordButton.textContent = 'Record';
-                    recordButton.classList.remove('record');
-                    recordButton.classList.add('stop');
+                    startRecording();
                 }
-            });
+            }
+
+            recordButton.addEventListener('click', toggleRecording);
+            recordButton.addEventListener('touchstart', toggleRecording);
 
             toggleTranscriptButton.addEventListener('click', () => {
                 transcriptElement.classList.toggle('hidden');
-                if (transcriptElement.classList.contains('hidden')) {
-                    toggleTranscriptButton.textContent = 'Show Transcript';
-                } else {
-                    toggleTranscriptButton.textContent = 'Hide Transcript';
-                }
+                toggleTranscriptButton.textContent = transcriptElement.classList.contains('hidden') ? 'Show Transcript' : 'Hide Transcript';
             });
 
             audioResponse.addEventListener('play', () => {
