@@ -16,6 +16,5 @@
         "OPENAI_API_KEY": "@openai_api_key",
         "OPENAI_ORG": "@openai_org",
         "ELEVENLABS_KEY": "@elevenlabs_key"
-    },
-    "pythonVersion": "3.12.3"
+    }
 }
