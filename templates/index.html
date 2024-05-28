@@ -34,6 +34,7 @@
             let isRecording = false;
             let startTime;
             let timerInterval;
+            let mimeType;
 
             const recordButton = document.getElementById('recordButton');
             const recordProgress = document.getElementById('recordProgress');
@@ -50,14 +51,26 @@
             async function startRecording() {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+                    // Detect supported MIME type
+                    if (MediaRecorder.isTypeSupported('audio/webm')) {
+                        mimeType = 'audio/webm';
+                    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                        mimeType = 'audio/mp4';
+                    } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+                        mimeType = 'audio/wav';
+                    } else {
+                        throw new Error('None of the supported MIME types are available.');
+                    }
+
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
 
                     mediaRecorder.ondataavailable = event => {
                         audioChunks.push(event.data);
                     };
 
                     mediaRecorder.onstop = async () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioBlob = new Blob(audioChunks, { type: mimeType });
                         audioChunks = [];
                         sendAudioToServer(audioBlob);
                     };
@@ -134,7 +147,7 @@
                 errorMessage.style.display = 'none';
 
                 const formData = new FormData();
-                formData.append('file', audioBlob, 'recording.webm');
+                formData.append('file', audioBlob, 'recording.' + mimeType.split('/')[1]);
 
                 try {
                     const response = await fetch('/talk', {
