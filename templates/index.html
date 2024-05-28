@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Dilbert</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div id="container">
+        <h1>DILBOT</h1>
+        <img id="dilbertImage" src="/static/dilbert.jpg" alt="Dilbert">
+        <button id="recordButton" class="stop">Record</button>
+        <div id="loading"></div>
+        <div id="errorMessage"></div>
+        <div class="audio-container">
+            <audio id="audioResponse" controls></audio>
+            <button id="toggleTranscriptButton">Show Transcript</button>
+        </div>
+        <div id="conversation" class="hidden">
+            <div id="transcript" class="hidden">
+                <p><strong>User Message:</strong> <span id="userMessage"></span></p>
+                <p><strong>Bot Response:</strong> <span id="botMessage"></span></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            let mediaRecorder;
+            let audioChunks = [];
+            let isRecording = false;
+
+            const recordButton = document.getElementById('recordButton');
+            const loadingIndicator = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            const userMessageElement = document.getElementById('userMessage');
+            const botMessageElement = document.getElementById('botMessage');
+            const conversationElement = document.getElementById('conversation');
+            const toggleTranscriptButton = document.getElementById('toggleTranscriptButton');
+            const transcriptElement = document.getElementById('transcript');
+            const dilbertImage = document.getElementById('dilbertImage');
+            const audioResponse = document.getElementById('audioResponse');
+
+            recordButton.addEventListener('click', async () => {
+                if (!isRecording) {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        audioChunks = [];
+                        sendAudioToServer(audioBlob);
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    recordButton.textContent = 'Stop';
+                    recordButton.classList.remove('stop');
+                    recordButton.classList.add('record');
+                } else {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    recordButton.textContent = 'Record';
+                    recordButton.classList.remove('record');
+                    recordButton.classList.add('stop');
+                }
+            });
+
+            toggleTranscriptButton.addEventListener('click', () => {
+                transcriptElement.classList.toggle('hidden');
+                if (transcriptElement.classList.contains('hidden')) {
+                    toggleTranscriptButton.textContent = 'Show Transcript';
+                } else {
+                    toggleTranscriptButton.textContent = 'Hide Transcript';
+                }
+            });
+
+            audioResponse.addEventListener('play', () => {
+                dilbertImage.style.animation = 'shake 0.5s';
+                dilbertImage.style.animationIterationCount = 'infinite';
+            });
+
+            audioResponse.addEventListener('pause', () => {
+                dilbertImage.style.animation = 'none';
+            });
+
+            async function sendAudioToServer(audioBlob) {
+                loadingIndicator.style.display = 'block';
+                errorMessage.style.display = 'none';
+
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'recording.webm');
+
+                try {
+                    const response = await fetch('/talk', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const responseData = await response.json();
+                        userMessageElement.textContent = responseData.user_message;
+                        botMessageElement.textContent = responseData.bot_message;
+
+                        const audioBinary = atob(responseData.audio);
+                        const arrayBuffer = new ArrayBuffer(audioBinary.length);
+                        const bufferView = new Uint8Array(arrayBuffer);
+                        for (let i = 0; i < audioBinary.length; i++) {
+                            bufferView[i] = audioBinary.charCodeAt(i);
+                        }
+                        const audioBlob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        audioResponse.src = audioUrl;
+
+                        audioResponse.oncanplaythrough = () => {
+                            loadingIndicator.style.display = 'none';
+                            audioResponse.play();
+                        };
+
+                        conversationElement.classList.remove('hidden');
+                    } else {
+                        throw new Error(response.statusText);
+                    }
+                } catch (error) {
+                    loadingIndicator.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = `Error: ${error.message}`;
+                    console.error('Error:', error);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
