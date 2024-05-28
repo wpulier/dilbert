@@ -10,7 +10,7 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #d30000;
+  background-color: #ff0000;
 }
 
 h1 {
@@ -116,6 +116,14 @@ h1 {
 
 #recordButton.record {
   background-color: rgb(201, 114, 114);
+}
+
+#recordProgress {
+  width: 100%;
+  margin-top: 10px;
+  height: 20px;
+  border-radius: 5px;
+  overflow: hidden;
 }
 
 #toggleTranscriptButton {

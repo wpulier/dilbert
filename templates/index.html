@@ -13,6 +13,7 @@
         <h1>DILBOT</h1>
         <img id="dilbertImage" src="/static/dilbert.jpg" alt="Dilbert">
         <button id="recordButton" class="stop">TALK</button>
+        <progress id="recordProgress" value="0" max="30"></progress>
         <div id="loading"></div>
         <div id="errorMessage"></div>
         <div class="audio-container">
@@ -31,8 +32,11 @@
             let mediaRecorder;
             let audioChunks = [];
             let isRecording = false;
+            let startTime;
+            let timerInterval;
 
             const recordButton = document.getElementById('recordButton');
+            const recordProgress = document.getElementById('recordProgress');
             const loadingIndicator = document.getElementById('loading');
             const errorMessage = document.getElementById('errorMessage');
             const userMessageElement = document.getElementById('userMessage');
@@ -44,32 +48,48 @@
             const audioResponse = document.getElementById('audioResponse');
 
             async function startRecording() {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
 
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    audioChunks = [];
-                    sendAudioToServer(audioBlob);
-                };
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        audioChunks = [];
+                        sendAudioToServer(audioBlob);
+                    };
 
-                mediaRecorder.start();
-                isRecording = true;
-                recordButton.textContent = 'STOP';
-                recordButton.classList.remove('stop');
-                recordButton.classList.add('record');
+                    mediaRecorder.start();
+                    startTime = Date.now();
+                    isRecording = true;
+                    recordButton.textContent = 'STOP';
+                    recordButton.classList.remove('stop');
+                    recordButton.classList.add('record');
+                    startTimer();
+                } catch (error) {
+                    errorMessage.textContent = `Error accessing microphone: ${error.message}`;
+                    errorMessage.style.display = 'block';
+                }
             }
 
             function stopRecording() {
+                if (!isRecording) return;
                 mediaRecorder.stop();
                 isRecording = false;
                 recordButton.textContent = 'TALK';
                 recordButton.classList.remove('record');
                 recordButton.classList.add('stop');
+                clearInterval(timerInterval);
+                recordProgress.value = 0;
+
+                const duration = (Date.now() - startTime) / 1000;
+                if (duration < 1) {
+                    errorMessage.textContent = 'Recording is too short!';
+                    errorMessage.style.display = 'block';
+                }
             }
 
             function toggleRecording() {
@@ -78,6 +98,18 @@
                 } else {
                     startRecording();
                 }
+            }
+
+            function startTimer() {
+                const maxTime = 30; // 30 seconds
+                timerInterval = setInterval(() => {
+                    const elapsedTime = (Date.now() - startTime) / 1000;
+                    recordProgress.value = elapsedTime;
+
+                    if (elapsedTime >= maxTime) {
+                        stopRecording();
+                    }
+                }, 100);
             }
 
             recordButton.addEventListener('click', toggleRecording);
