@@ -28,7 +28,7 @@
         </div>
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
+        document.addEventListener('DOMContentLoaded', () => {
             let mediaRecorder;
             let audioChunks = [];
             let isRecording = false;
@@ -47,6 +47,12 @@
             const transcriptElement = document.getElementById('transcript');
             const dilbertImage = document.getElementById('dilbertImage');
             const audioResponse = document.getElementById('audioResponse');
+
+            function logError(error) {
+                console.error(error);
+                errorMessage.textContent = `Error: ${error.message}`;
+                errorMessage.style.display = 'block';
+            }
 
             async function startRecording() {
                 try {
@@ -72,7 +78,7 @@
                     mediaRecorder.onstop = async () => {
                         const audioBlob = new Blob(audioChunks, { type: mimeType });
                         audioChunks = [];
-                        sendAudioToServer(audioBlob);
+                        await sendAudioToServer(audioBlob);
                     };
 
                     mediaRecorder.start();
@@ -83,8 +89,7 @@
                     recordButton.classList.add('record');
                     startTimer();
                 } catch (error) {
-                    errorMessage.textContent = `Error accessing microphone: ${error.message}`;
-                    errorMessage.style.display = 'block';
+                    logError(error);
                 }
             }
 
@@ -147,7 +152,7 @@
                 errorMessage.style.display = 'none';
 
                 const formData = new FormData();
-                formData.append('file', audioBlob, 'recording.' + mimeType.split('/')[1]);
+                formData.append('file', audioBlob, `recording.${mimeType.split('/')[1]}`);
 
                 try {
                     const response = await fetch('/talk', {
@@ -180,10 +185,8 @@
                         throw new Error(response.statusText);
                     }
                 } catch (error) {
+                    logError(error);
                     loadingIndicator.style.display = 'none';
-                    errorMessage.style.display = 'block';
-                    errorMessage.textContent = `Error: ${error.message}`;
-                    console.error('Error:', error);
                 }
             }
         });
