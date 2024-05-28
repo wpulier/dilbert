@@ -84,6 +84,7 @@
                     mediaRecorder.start();
                     startTime = Date.now();
                     isRecording = true;
+                    console.log("Recording started");
                     recordButton.textContent = 'STOP';
                     recordButton.classList.remove('stop');
                     recordButton.classList.add('record');
@@ -95,6 +96,7 @@
 
             function stopRecording() {
                 if (!isRecording) return;
+                console.log("Stopping recording");
                 mediaRecorder.stop();
                 isRecording = false;
                 recordButton.textContent = 'TALK';
@@ -102,6 +104,7 @@
                 recordButton.classList.add('stop');
                 clearInterval(timerInterval);
                 recordProgress.value = 0;
+                console.log("Recording stopped");
 
                 const duration = (Date.now() - startTime) / 1000;
                 if (duration < 1) {
@@ -125,13 +128,19 @@
                     recordProgress.value = elapsedTime;
 
                     if (elapsedTime >= maxTime) {
+                        console.log("Max time reached, stopping recording");
                         stopRecording();
                     }
                 }, 100);
             }
 
+            function handleTouchEvent(event) {
+                event.preventDefault();
+                toggleRecording();
+            }
+
             recordButton.addEventListener('click', toggleRecording);
-            recordButton.addEventListener('touchstart', toggleRecording);
+            recordButton.addEventListener('touchstart', handleTouchEvent);
 
             toggleTranscriptButton.addEventListener('click', () => {
                 transcriptElement.classList.toggle('hidden');
@@ -150,6 +159,7 @@
             async function sendAudioToServer(audioBlob) {
                 loadingIndicator.style.display = 'block';
                 errorMessage.style.display = 'none';
+                console.log("Sending audio to server");
 
                 const formData = new FormData();
                 formData.append('file', audioBlob, `recording.${mimeType.split('/')[1]}`);
@@ -181,6 +191,7 @@
                         };
 
                         conversationElement.classList.remove('hidden');
+                        console.log("Audio and transcript received from server");
                     } else {
                         throw new Error(response.statusText);
                     }
