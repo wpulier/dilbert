@@ -12,7 +12,6 @@ import base64
 
 load_dotenv()
 
-elevenlabs_key = os.getenv("ELEVENLABS_KEY")
 
 
 app = FastAPI()
@@ -20,6 +19,7 @@ app = FastAPI()
 client = OpenAI()
 
 client.api_key = os.getenv('OPENAI_API_KEY')
+elevenlabs_key = os.getenv("ELEVENLABS_KEY")
 
 
 # Mount the static files directory
