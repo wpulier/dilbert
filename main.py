@@ -14,9 +14,12 @@ load_dotenv()
 
 elevenlabs_key = os.getenv("ELEVENLABS_KEY")
 
+
 app = FastAPI()
 
 client = OpenAI()
+
+client.api_key = os.getenv('OPENAI_API_KEY')
 
 
 # Mount the static files directory
