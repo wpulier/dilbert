@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with Dilbert</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=1.0.2">
 </head>
 
 <body>
@@ -17,8 +17,8 @@
         <div id="loading"></div>
         <div id="errorMessage"></div>
         <div class="audio-container">
-            <audio id="audioResponse" controls></audio>
-            <button id="toggleTranscriptButton">Show Transcript</button>
+            <button id="replayAudioButton" class="control-button">Replay Audio</button>
+            <button id="toggleTranscriptButton" class="control-button">Show Transcript</button>
         </div>
         <div id="conversation" class="hidden">
             <div id="transcript" class="hidden">
@@ -46,7 +46,8 @@
             const toggleTranscriptButton = document.getElementById('toggleTranscriptButton');
             const transcriptElement = document.getElementById('transcript');
             const dilbertImage = document.getElementById('dilbertImage');
-            const audioResponse = document.getElementById('audioResponse');
+            const replayAudioButton = document.getElementById('replayAudioButton');
+            const audioResponse = new Audio(); // Create a new audio element
 
             function logError(error) {
                 console.error(error);
@@ -58,7 +59,6 @@
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-                    // Detect supported MIME type
                     if (MediaRecorder.isTypeSupported('audio/webm')) {
                         mimeType = 'audio/webm';
                     } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
@@ -123,7 +123,7 @@
             }
 
             function startTimer() {
-                const maxTime = 30; // 30 seconds
+                const maxTime = 30;
                 timerInterval = setInterval(() => {
                     const elapsedTime = (Date.now() - startTime) / 1000;
                     recordProgress.value = elapsedTime;
@@ -146,6 +146,12 @@
             toggleTranscriptButton.addEventListener('click', () => {
                 transcriptElement.classList.toggle('hidden');
                 toggleTranscriptButton.textContent = transcriptElement.classList.contains('hidden') ? 'Show Transcript' : 'Hide Transcript';
+            });
+
+            replayAudioButton.addEventListener('click', () => {
+                if (audioResponse.src) {
+                    audioResponse.play();
+                }
             });
 
             audioResponse.addEventListener('play', () => {
